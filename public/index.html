@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live Group Chat</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: #e9ecef;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+      .container {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 450px;
+        box-sizing: border-box;
+      }
+      h2 {
+        margin-top: 0;
+        color: #333;
+        text-align: center;
+      }
+      input,
+      button {
+        width: 100%;
+        padding: 12px;
+        margin: 8px 0;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 16px;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        transition: 0.2s;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+
+      #chat-screen {
+        display: none;
+      } /* Hidden by default */
+
+      #messages {
+        height: 350px;
+        overflow-y: auto;
+        border: 1px solid #eee;
+        padding: 15px;
+        margin-bottom: 15px;
+        background: #f8f9fa;
+        border-radius: 5px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .msg {
+        padding: 8px 12px;
+        border-radius: 5px;
+        background: #e2e3e5;
+        width: fit-content;
+        max-width: 80%;
+        word-wrap: break-word;
+      }
+      .system {
+        background: none;
+        color: #6c757d;
+        font-style: italic;
+        font-size: 0.85em;
+        text-align: center;
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .input-area {
+        display: flex;
+        gap: 10px;
+      }
+      #send-btn {
+        width: 30%;
+        margin: 0;
+      }
+      #msg-input {
+        margin: 0;
+      }
+      #leave-btn {
+        background: #dc3545;
+        margin-top: 15px;
+      }
+      #leave-btn:hover {
+        background: #c82333;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- SCREEN 1: Join Group -->
+    <div id="join-screen" class="container">
+      <h2>Join a Group Chat</h2>
+      <input type="text" id="username" placeholder="Your Name" required />
+      <input
+        type="text"
+        id="room"
+        placeholder="Group Name (e.g. 'general')"
+        required
+      />
+      <button id="join-btn">Enter Chat</button>
+    </div>
+
+    <!-- SCREEN 2: Chat Window -->
+    <div id="chat-screen" class="container">
+      <h2 id="room-title">Room:</h2>
+      <div id="messages"></div>
+      <div class="input-area">
+        <input
+          type="text"
+          id="msg-input"
+          placeholder="Type a message..."
+          autocomplete="off"
+        />
+        <button id="send-btn">Send</button>
+      </div>
+      <button id="leave-btn">Leave Group</button>
+    </div>
+
+    <!-- Load the Socket.io library -->
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+      const socket = io();
+
+      // Connect HTML elements to JavaScript variables
+      const joinScreen = document.getElementById("join-screen");
+      const chatScreen = document.getElementById("chat-screen");
+      const usernameInput = document.getElementById("username");
+      const roomInput = document.getElementById("room");
+      const joinBtn = document.getElementById("join-btn");
+      const roomTitle = document.getElementById("room-title");
+      const messagesDiv = document.getElementById("messages");
+      const msgInput = document.getElementById("msg-input");
+      const sendBtn = document.getElementById("send-btn");
+      const leaveBtn = document.getElementById("leave-btn");
+
+      // 1. Join Button Logic
+      joinBtn.addEventListener("click", () => {
+        const username = usernameInput.value.trim();
+        const room = roomInput.value.trim();
+
+        if (username && room) {
+          // Tell the server we want to join
+          socket.emit("joinRoom", { username, room });
+
+          // Switch the screens
+          joinScreen.style.display = "none";
+          chatScreen.style.display = "block";
+          roomTitle.innerText = `Room: ${room}`;
+        }
+      });
+
+      // 2. Send Message Logic
+      function sendMessage() {
+        const msg = msgInput.value.trim();
+        if (msg) {
+          socket.emit("chatMessage", msg);
+          msgInput.value = ""; // clear input box
+          msgInput.focus();
+        }
+      }
+
+      sendBtn.addEventListener("click", sendMessage);
+
+      msgInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+      });
+
+      // 3. Receive Messages Logic
+      socket.on("message", (data) => {
+        const div = document.createElement("div");
+        div.classList.add("msg");
+
+        if (data.username === "System") {
+          div.classList.add("system");
+          div.innerText = data.text;
+        } else {
+          div.innerHTML = `<strong>${data.username}:</strong> ${data.text}`;
+        }
+
+        messagesDiv.appendChild(div);
+        // Auto-scroll to the bottom of the chat
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      });
+
+      // 4. Leave Button Logic
+      leaveBtn.addEventListener("click", () => {
+        // Reloading the page drops the WebSocket connection immediately
+        location.reload();
+      });
+    </script>
+  </body>
+</html>
