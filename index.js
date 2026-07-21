@@ -6,48 +6,108 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Tell the server to look for our website files in a folder called 'public'
 app.use(express.static("public"));
 
-// This block listens for new users connecting to the server
+// --- IN-MEMORY STORAGE ---
+// Buffer for messages
+const roomMessages = {}; 
+// Track specific users
+const users = {}; 
+
+function getRoomUsers(room) {
+  const usersInRoom = [];
+  for (const socketId in users) {
+    if (users[socketId].room === room) {
+      usersInRoom.push(users[socketId].username);
+    }
+  }
+  return usersInRoom;
+}
+
 io.on("connection", (socket) => {
-  // 1. Listen for a user asking to join a specific room
+  
+  // NEW: Verify if room exists before user joins
+  socket.on("checkRoom", (room) => {
+    // A room exists if it has active users or a saved message buffer
+    const roomHasUsers = getRoomUsers(room).length > 0;
+    const roomHasBuffer = !!roomMessages[room];
+    
+    const exists = roomHasUsers || roomHasBuffer;
+    
+    // Send status back to the single user asking
+    socket.emit("roomStatus", { exists, room });
+  });
+
+  // 1. User Joins Room
   socket.on("joinRoom", ({ username, room }) => {
     socket.join(room);
-    socket.username = username;
-    socket.room = room;
+    
+    users[socket.id] = { username, room };
 
-    // Broadcast a system message to that specific room
-    socket.to(room).emit("message", {
+    if (roomMessages[room]) {
+      socket.emit("messageHistory", roomMessages[room]);
+    }
+
+    const sysMsg = {
       username: "System",
-      text: `${username} has joined the chat.`,
+      text: `${username} slipped into the void.`,
+    };
+    socket.to(room).emit("message", sysMsg);
+
+    io.to(room).emit("roomUsers", {
+      users: getRoomUsers(room)
     });
   });
 
-  // 2. Listen for chat messages from the user
-  socket.on("chatMessage", (msg) => {
-    if (socket.room) {
-      // Send the message to everyone in the room, including the sender
-      io.to(socket.room).emit("message", {
-        username: socket.username,
-        text: msg,
-      });
+  // 2. User Sends Message
+  socket.on("chatMessage", (text) => {
+    const user = users[socket.id];
+    
+    if (user && text.trim().length > 0) {
+      const msgObj = {
+        username: user.username,
+        text: text.trim(),
+      };
+
+      if (!roomMessages[user.room]) {
+        roomMessages[user.room] = [];
+      }
+
+      roomMessages[user.room].push(msgObj);
+
+      if (roomMessages[user.room].length > 50) {
+        roomMessages[user.room].shift();
+      }
+
+      io.to(user.room).emit("message", msgObj);
     }
   });
 
-  // 3. Listen for when a user closes their browser tab
+  // 3. User Disconnects
   socket.on("disconnect", () => {
-    if (socket.room && socket.username) {
-      socket.to(socket.room).emit("message", {
+    const user = users[socket.id];
+    
+    if (user) {
+      socket.to(user.room).emit("message", {
         username: "System",
-        text: `${socket.username} left the chat.`,
+        text: `${user.username} faded away.`,
       });
+
+      delete users[socket.id];
+
+      io.to(user.room).emit("roomUsers", {
+        users: getRoomUsers(user.room)
+      });
+      
+      const remainingUsers = getRoomUsers(user.room);
+      if (remainingUsers.length === 0) {
+        delete roomMessages[user.room];
+      }
     }
   });
 });
 
-// Start the server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server is running and listening on port ${PORT}`);
+  console.log(`chat_anlabib server is running on port ${PORT}`);
 });
