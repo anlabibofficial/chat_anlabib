@@ -2,16 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- NEW: Added interactive-widget to viewport to better handle virtual keyboards on modern browsers -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
   <title>chat_anlabib | Secure & Anonymous</title>
   <style>
+    /* NEW: Pin the entire HTML document to the screen edges to stop browser-level pushing */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100dvh; /* Dynamic viewport height */
+      overflow: hidden; /* Prevent scrolling outside our control */
+      position: fixed; /* THE FIX: Locks the window so the keyboard cannot push it up */
+      top: 0;
+      left: 0;
+    }
+
     /* Global Styles & Animated Gradient Background (Dark Mode Default) */
     body {
-      margin: 0;
       font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      /* Fallback for older browsers, 100dvh for modern mobile keyboard handling */
-      height: 100vh;
-      height: 100dvh; 
       display: flex;
       justify-content: center;
       align-items: center;
@@ -20,7 +29,6 @@
       animation: gradientBG 15s ease infinite;
       color: #f8fafc;
       transition: background 0.5s ease, color 0.5s ease;
-      overflow: hidden; /* Prevent body scrolling when keyboard opens */
     }
 
     @keyframes gradientBG {
@@ -148,7 +156,7 @@
       flex-direction: column;
       transition: background 0.5s ease, border 0.5s ease;
       position: relative; 
-      overflow: hidden; /* NEW: Locks content completely inside the panel boundaries */
+      overflow: hidden;
     }
 
     /* --- SCREEN 1: Join Screen --- */
@@ -227,8 +235,8 @@
       display: flex; justify-content: space-between; align-items: center;
       padding: 15px 20px; background: rgba(0, 0, 0, 0.2);
       border-bottom: 1px solid rgba(255, 255, 255, 0.1); position: relative;
-      flex-shrink: 0; /* NEW: Prevents header from squishing when keyboard opens */
-      z-index: 10;    /* NEW: Ensures it stays on top of scrolled messages */
+      flex-shrink: 0; 
+      z-index: 10;    
     }
     .header-info-container { display: flex; flex-direction: column; overflow: hidden; }
     
@@ -282,7 +290,7 @@
     #messages::-webkit-scrollbar { width: 6px; }
     #messages::-webkit-scrollbar-thumb { background: rgba(150, 150, 150, 0.3); border-radius: 10px; }
 
-    /* Invisible spring to push messages to the bottom (WhatsApp/Telegram style) */
+    /* Invisible spring to push messages to the bottom */
     #messages::before {
       content: '';
       flex-grow: 1;
@@ -314,8 +322,8 @@
     .input-area {
       padding: 15px 20px; background: rgba(0, 0, 0, 0.2);
       border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; gap: 10px; align-items: center;
-      flex-shrink: 0; /* NEW: Prevents input area from squishing when keyboard opens */
-      z-index: 10;    /* NEW: Ensures it stays on top */
+      flex-shrink: 0; 
+      z-index: 10;    
     }
     .pill-input { flex-grow: 1; border-radius: 50px !important; padding: 12px 20px !important; margin: 0 !important; }
     .send-btn {
@@ -343,12 +351,12 @@
       body {
         align-items: stretch; 
       }
-      /* Specifically target main screens so the modal isn't affected */
+      /* NEW: In fixed mode, panels take exactly 100% of the locked body to prevent push-up */
       #join-screen, #chat-screen {
         max-width: 100%;
         width: 100%;
-        height: 100dvh !important;
-        max-height: 100dvh !important;
+        height: 100% !important;
+        max-height: 100% !important;
         border-radius: 0;
         border: none;
         box-shadow: none;
@@ -377,7 +385,6 @@
 
   <!-- POPUP VERIFICATION MODAL -->
   <div id="verification-modal" class="modal-overlay">
-    <!-- Notice this is still a glass-panel, but excluded from the mobile stretch rule -->
     <div class="modal-content glass-panel">
       <h3 id="modal-title" class="modal-title">Checking Server...</h3>
       <p id="modal-desc" class="modal-desc">Please wait.</p>
@@ -389,7 +396,6 @@
   <!-- JOIN SCREEN -->
   <div id="join-screen" class="glass-panel">
     
-    <!-- Theme Toggle placed beautifully in the top right -->
     <div class="join-theme-wrapper">
       <button class="theme-toggle-btn" title="Toggle Light/Dark Mode">
         <svg class="theme-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20">
@@ -426,20 +432,16 @@
     
     <div class="chat-header">
       <div class="header-info-container">
-        
-        <!-- Separated the Room Title and Copy Button so the button stays small -->
         <div class="room-title-wrapper">
           <h2 class="room-name-header" id="room-title">#room</h2>
           <span id="copy-room-btn" class="copy-badge" title="Click to copy!">Copy</span>
         </div>
-        
         <span class="share-subtitle">
           Share the room name with your friends so they can join you here.
         </span>
       </div>
       
       <div class="header-buttons">
-        <!-- Theme toggle sits neatly in the header box next to other controls -->
         <button class="theme-toggle-btn" title="Toggle Light/Dark Mode">
           <svg class="theme-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
@@ -645,7 +647,6 @@
       }
     }
 
-    // Prevent focus stealing to stop keyboard blinking on mobile while supporting touch interaction
     sendBtn.addEventListener("mousedown", (e) => e.preventDefault());
     sendBtn.addEventListener("touchstart", (e) => {
       e.preventDefault();
