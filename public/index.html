@@ -278,7 +278,7 @@
     #messages::-webkit-scrollbar { width: 6px; }
     #messages::-webkit-scrollbar-thumb { background: rgba(150, 150, 150, 0.3); border-radius: 10px; }
 
-    /* NEW: Invisible spring to push messages to the bottom (WhatsApp/Telegram style) */
+    /* Invisible spring to push messages to the bottom (WhatsApp/Telegram style) */
     #messages::before {
       content: '';
       flex-grow: 1;
@@ -639,9 +639,12 @@
       }
     }
 
-    // NEW: Prevent focus stealing to stop keyboard blinking on mobile
+    // Prevent focus stealing to stop keyboard blinking on mobile while supporting touch interaction
     sendBtn.addEventListener("mousedown", (e) => e.preventDefault());
-    sendBtn.addEventListener("touchstart", (e) => e.preventDefault(), { passive: false });
+    sendBtn.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      sendMessage();
+    }, { passive: false });
     
     sendBtn.addEventListener("click", sendMessage);
     msgInput.addEventListener("keypress", (e) => {
