@@ -4,7 +4,14 @@ const { Server } = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+
+// NEW: Configured CORS to allow your external website to connect
+const io = new Server(server, {
+  cors: {
+    origin: "*", // Allows any website to connect. (Change to your specific domain later if you want strict security)
+    methods: ["GET", "POST"]
+  }
+});
 
 app.use(express.static("public"));
 
@@ -26,7 +33,7 @@ function getRoomUsers(room) {
 
 io.on("connection", (socket) => {
   
-  // NEW: Verify if room exists before user joins
+  // Verify if room exists before user joins
   socket.on("checkRoom", (room) => {
     // A room exists if it has active users or a saved message buffer
     const roomHasUsers = getRoomUsers(room).length > 0;
