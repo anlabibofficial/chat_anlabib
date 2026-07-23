@@ -147,7 +147,8 @@
       display: flex;
       flex-direction: column;
       transition: background 0.5s ease, border 0.5s ease;
-      position: relative; /* For absolute children like the theme toggle on Join screen */
+      position: relative; 
+      overflow: hidden; /* NEW: Locks content completely inside the panel boundaries */
     }
 
     /* --- SCREEN 1: Join Screen --- */
@@ -219,12 +220,15 @@
     #chat-screen { 
       display: none; 
       height: 90vh; 
-      max-height: 800px; /* Constrain massive heights on large desktop displays */
+      max-height: 800px; 
     }
+    
     .chat-header {
       display: flex; justify-content: space-between; align-items: center;
       padding: 15px 20px; background: rgba(0, 0, 0, 0.2);
       border-bottom: 1px solid rgba(255, 255, 255, 0.1); position: relative;
+      flex-shrink: 0; /* NEW: Prevents header from squishing when keyboard opens */
+      z-index: 10;    /* NEW: Ensures it stays on top of scrolled messages */
     }
     .header-info-container { display: flex; flex-direction: column; overflow: hidden; }
     
@@ -243,7 +247,7 @@
     .copy-badge {
       color: #38bdf8; 
       font-weight: bold; 
-      font-size: 12px; /* Fixed small font size */
+      font-size: 12px; 
       background: rgba(56, 189, 248, 0.15);
       padding: 4px 8px; 
       border-radius: 6px; 
@@ -310,6 +314,8 @@
     .input-area {
       padding: 15px 20px; background: rgba(0, 0, 0, 0.2);
       border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; gap: 10px; align-items: center;
+      flex-shrink: 0; /* NEW: Prevents input area from squishing when keyboard opens */
+      z-index: 10;    /* NEW: Ensures it stays on top */
     }
     .pill-input { flex-grow: 1; border-radius: 50px !important; padding: 12px 20px !important; margin: 0 !important; }
     .send-btn {
